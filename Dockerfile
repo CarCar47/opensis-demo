@@ -44,8 +44,19 @@ RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 # Create a health check file
 RUN echo "<?php echo 'OK'; ?>" > /var/www/html/health.php
 
-# Expose port 80
-EXPOSE 80
+# Create startup script for dynamic port configuration
+RUN echo '#!/bin/bash\n\
+# Use PORT environment variable or default to 8080\n\
+export PORT=${PORT:-8080}\n\
+# Configure Apache to listen on the specified port\n\
+sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf\n\
+sed -i "s/:80/:$PORT/" /etc/apache2/sites-available/000-default.conf\n\
+# Start Apache\n\
+apache2-foreground' > /usr/local/bin/start-apache.sh \
+    && chmod +x /usr/local/bin/start-apache.sh
 
-# Start Apache in foreground
-CMD ["apache2-foreground"]
+# Expose port (will be overridden by Cloud Run)
+EXPOSE 8080
+
+# Start Apache with dynamic port configuration
+CMD ["/usr/local/bin/start-apache.sh"]
