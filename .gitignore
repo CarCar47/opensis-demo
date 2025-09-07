@@ -1,0 +1,97 @@
+# Configuration files with sensitive data
+Data.php
+config.local.php
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+logs/
+error_log
+access_log
+
+# Upload directories (user content)
+assets/studentphotos/*
+assets/userphotos/*
+assets/schoollogo/*
+assets/school_logo/*
+# Keep the directories but ignore contents
+!assets/studentphotos/.gitkeep
+!assets/userphotos/.gitkeep
+!assets/schoollogo/.gitkeep
+
+# Backup files
+*.backup
+*.bak
+*.sql
+backup/
+backups/
+*.zip
+*.tar
+*.tar.gz
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+nbproject/
+
+# Docker
+mysql_data/
+.docker/
+
+# Node (if any JS build tools are added later)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Composer (if using PHP packages)
+vendor/
+composer.lock
+
+# Test files
+test.php
+test*.php
+phpinfo.php
+
+# Session files
+sessions/
+sess_*
+
+# Cache directories
+cache/
+tmp/
+temp/
+
+# XAMPP specific (shouldn't be in production)
+.htaccess.sample
+xampp/
+
+# Installation files that might contain sensitive info after setup
+install/*.log
+install/temp/
+
+# Custom or local configuration overrides
+local_config/
+custom_config/

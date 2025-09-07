@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=opensis
+      - DB_USER=root
+      - DB_PASSWORD=opensispassword
+    depends_on:
+      - db
+    volumes:
+      # For development only - allows live code changes
+      - ./:/var/www/html
+    networks:
+      - opensis-network
+
+  db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=opensispassword
+      - MYSQL_DATABASE=opensis
+      - MYSQL_CHARACTER_SET=utf8
+      - MYSQL_COLLATION=utf8_general_ci
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - opensis-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      - PMA_HOST=db
+      - PMA_PORT=3306
+      - PMA_USER=root
+      - PMA_PASSWORD=opensispassword
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    networks:
+      - opensis-network
+
+volumes:
+  mysql_data:
+
+networks:
+  opensis-network:
+    driver: bridge

@@ -1,0 +1,48 @@
+<?php
+/**
+ * Database Configuration Template
+ * 
+ * Copy this file to Data.php and update with your database credentials
+ * 
+ * For local development (XAMPP):
+ * - Set values directly as shown below
+ * 
+ * For production (Cloud Run):
+ * - Use environment variables for security
+ */
+
+// Database type (don't change this)
+$DatabaseType = 'mysql';
+
+// For Local Development (XAMPP)
+$DatabaseServer = 'localhost';      // or '127.0.0.1'
+$DatabaseUsername = 'root';         // default XAMPP username
+$DatabasePassword = '';              // default XAMPP has no password
+$DatabaseName = 'opensis';          // your database name
+$DatabasePort = '3306';              // default MySQL port
+
+// For Docker Development
+// $DatabaseServer = 'db';           // Docker service name
+// $DatabaseUsername = 'root';
+// $DatabasePassword = 'opensispassword';
+// $DatabaseName = 'opensis';
+// $DatabasePort = '3306';
+
+// For Production (Google Cloud Run with Cloud SQL)
+// $DatabaseServer = getenv('DB_HOST') ?: 'localhost';
+// $DatabaseUsername = getenv('DB_USER') ?: 'root';
+// $DatabasePassword = getenv('DB_PASSWORD') ?: '';
+// $DatabaseName = getenv('DB_NAME') ?: 'opensis';
+// $DatabasePort = getenv('DB_PORT') ?: '3306';
+
+// For Cloud SQL via Unix Socket
+// $DatabaseServer = getenv('DB_HOST'); // e.g., '/cloudsql/project:region:instance'
+
+/**
+ * IMPORTANT SECURITY NOTES:
+ * 1. Never commit Data.php with real passwords to version control
+ * 2. Data.php is already in .gitignore to prevent accidental commits
+ * 3. In production, always use environment variables or secret managers
+ * 4. Keep different configurations for development, staging, and production
+ */
+?>
