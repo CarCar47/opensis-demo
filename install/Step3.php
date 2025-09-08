@@ -46,10 +46,14 @@ session_start();
         <script src="assets/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
         <?php
         echo '<script type="text/javascript">
+        try {
             var page=parent.location.href.replace(/.*\//,"");
-            if(page && page!="index.php"){
+            if(window.self === window.top && page && page!="index.php"){
                 window.location.href="index.php";
             }
+        } catch(e) {
+            // Cross-origin access blocked, assume proper iframe usage
+        }
         </script>';
         ?>
         <script>

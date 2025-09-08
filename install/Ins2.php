@@ -28,8 +28,15 @@
 #***************************************************************************************
 include '../functions/ParamLibFnc.php';
 require_once "../functions/PragRepFnc.php";
-error_reporting(0);
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
 session_start();
+
+// Debug session information
+error_log("Session data: " . print_r($_SESSION, true));
+error_log("POST data: " . print_r($_POST, true));
+error_log("REQUEST data: " . print_r($_REQUEST, true));
 if (clean_param($_REQUEST["db"], PARAM_DATA) == '') {
     header('Location: Step2.php?err=Database name cannot be blank');
     exit;
@@ -48,6 +55,11 @@ if (clean_param($_REQUEST["db"], PARAM_DATA) == '') {
 
     // $dbconn = new mysqli($_SESSION['server'], $_SESSION['username'], $_SESSION['password'], $_SESSION['db'], $_SESSION['port']);
     $db = new mysqli($_SESSION['server'], $_SESSION['username'], $_SESSION['password']);
+    if ($db->connect_error) {
+        error_log("Database connection failed: " . $db->connect_error);
+        header('Location: Step2.php?err=Database connection failed: ' . urlencode($db->connect_error));
+        exit;
+    }
     $database = $_SESSION['db'];
     $query = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME=?";
     $stmt = $db->prepare($query);
@@ -73,9 +85,19 @@ if (clean_param($_REQUEST["db"], PARAM_DATA) == '') {
                 exit;
             } else {
                 $myFile = "OpensisSchemaMysqlInc.sql";
+                if (!file_exists($myFile)) {
+                    error_log("SQL file not found: " . $myFile);
+                    header('Location: Step2.php?err=SQL file not found: ' . urlencode($myFile));
+                    exit;
+                }
                 executeSQL($myFile);
 
                 $myFile = "OpensisProcsMysqlInc.sql";
+                if (!file_exists($myFile)) {
+                    error_log("SQL file not found: " . $myFile);
+                    header('Location: Step2.php?err=SQL file not found: ' . urlencode($myFile));
+                    exit;
+                }
                 executeSQL($myFile);
 
                 $dbconn->close();
@@ -157,7 +179,18 @@ if (clean_param($_REQUEST["db"], PARAM_DATA) == '') {
 function executeSQL($myFile)
 {
     $dbconn = new mysqli($_SESSION['server'], $_SESSION['username'], $_SESSION['password'], $_SESSION['db'], $_SESSION['port']);
+    if ($dbconn->connect_error) {
+        error_log("Database connection failed in executeSQL: " . $dbconn->connect_error);
+        header('Location: Step2.php?err=Database connection failed: ' . urlencode($dbconn->connect_error));
+        exit;
+    }
+    
     $sql = file_get_contents($myFile);
+    if ($sql === false) {
+        error_log("Failed to read SQL file: " . $myFile);
+        header('Location: Step2.php?err=Failed to read SQL file: ' . urlencode($myFile));
+        exit;
+    }
     $sqllines = par_spt("/[\n]/", $sql);
 
     $cmd = '';
@@ -177,7 +210,12 @@ function executeSQL($myFile)
                     }
                 }
                 if (par_rep_mt('/.+;/', $l) != 0 && !$delim) {
-                    $result = $dbconn->query($cmd) or die($dbconn->error);
+                    $result = $dbconn->query($cmd);
+                    if (!$result) {
+                        error_log("SQL execution error: " . $dbconn->error . " | SQL: " . $cmd);
+                        header('Location: Step2.php?err=SQL execution error: ' . urlencode($dbconn->error));
+                        exit;
+                    }
                     $cmd = '';
                 }
             }
