@@ -38,6 +38,9 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod -R 777 /var/www/html/assets
 
+# Remove install directory for production (installation already completed)
+RUN rm -rf /var/www/html/install
+
 # Configure Apache
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf \
     && echo "DirectoryIndex index.php index.html" >> /etc/apache2/apache2.conf
