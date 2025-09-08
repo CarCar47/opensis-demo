@@ -32,10 +32,18 @@ if (file_exists("Data.php"))
 {
     include("Data.php");
 }
-if($DatabaseServer == '')
+// Check if database is configured (either through Data.php or environment variables)
+$db_configured = !empty($DatabaseServer) || !empty(getenv('DB_HOST'));
+
+if(!$db_configured)
 {
-    // redirect user to the install procedure
-    header('Location: install/index.php');
+    // Database not configured - redirect to install procedure (but skip if install dir doesn't exist)
+    if(is_dir('install')) {
+        header('Location: install/index.php');
+    } else {
+        // For production deployments without install directory, show error
+        die('Database configuration missing. Please ensure environment variables DB_HOST, DB_USER, DB_PASS, DB_NAME are set.');
+    }
 }
 else {
     // Server Names and Paths
