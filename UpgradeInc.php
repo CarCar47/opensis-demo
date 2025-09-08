@@ -33,6 +33,7 @@ if (file_exists("Data.php"))
     include("Data.php");
 }
 // Check if database is configured (either through Data.php or environment variables)
+global $DatabaseServer;
 $db_configured = !empty($DatabaseServer) || !empty(getenv('DB_HOST'));
 
 if(!$db_configured)
