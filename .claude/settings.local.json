@@ -31,7 +31,15 @@
       "Bash(gcloud sql users set-password:*)",
       "Bash(gcloud sql instances describe:*)",
       "Bash(gcloud run services describe:*)",
-      "Bash(gcloud run revisions describe:*)"
+      "Bash(gcloud run revisions describe:*)",
+      "Bash(gcloud topic:*)",
+      "Bash(gcloud meta list-files-for-upload:*)",
+      "Bash(gcloud artifacts docker upgrade:*)",
+      "Bash(gcloud artifacts repositories create:*)",
+      "Bash(gcloud sql connect:*)",
+      "Bash(gcloud sql query:*)",
+      "Bash(gcloud sql import sql:*)",
+      "Bash(gcloud sql export sql:*)"
     ],
     "deny": [],
     "ask": []

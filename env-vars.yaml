@@ -1,0 +1,4 @@
+DB_HOST: "34.86.162.89"
+DB_USER: "root"
+DB_PASS: "pass123"
+DB_NAME: "opensis"
