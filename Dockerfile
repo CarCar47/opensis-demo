@@ -39,7 +39,8 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 777 /var/www/html/assets
 
 # Configure Apache
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf \
+    && echo "DirectoryIndex index.php index.html" >> /etc/apache2/apache2.conf
 
 # Create a health check file
 RUN echo "<?php echo 'OK'; ?>" > /var/www/html/health.php
@@ -49,8 +50,10 @@ RUN echo '#!/bin/bash\n\
 # Use PORT environment variable or default to 8080\n\
 export PORT=${PORT:-8080}\n\
 # Configure Apache to listen on the specified port\n\
-sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf\n\
-sed -i "s/:80/:$PORT/" /etc/apache2/sites-available/000-default.conf\n\
+sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf\n\
+sed -i "s/:80/:${PORT}/" /etc/apache2/sites-available/000-default.conf\n\
+# Ensure DocumentRoot is set correctly\n\
+sed -i "s|DocumentRoot.*|DocumentRoot /var/www/html|" /etc/apache2/sites-available/000-default.conf\n\
 # Start Apache\n\
 apache2-foreground' > /usr/local/bin/start-apache.sh \
     && chmod +x /usr/local/bin/start-apache.sh
