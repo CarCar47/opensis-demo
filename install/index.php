@@ -40,7 +40,7 @@ $page_name = basename($_SERVER['PHP_SELF']);
         <link href="../assets/css/icons/fontawesome/styles.min.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="../assets/css/bootstrap.min.css">
         <link rel="stylesheet" href="assets/css/installer.css" type="text/css" />
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
         <script>
             function resizeIframe(obj) {
                 if (obj && obj.contentWindow && obj.contentWindow.document && obj.contentWindow.document.body) {

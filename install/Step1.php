@@ -56,10 +56,14 @@ error_reporting(0);
         </script>
         <?php
         echo '<script type="text/javascript">
-var page=parent.location.href.replace(/.*\//,"");
-if(page && page!="index.php" ){
-	window.location.href="index.php";
-	}
+try {
+    var page=parent.location.href.replace(/.*\//,"");
+    if(window.self === window.top && page && page!="index.php"){
+        window.location.href="index.php";
+    }
+} catch(e) {
+    // Cross-origin access blocked, assume proper iframe usage
+}
 
 </script>';
         ?>

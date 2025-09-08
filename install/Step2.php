@@ -27,10 +27,14 @@
 #***************************************************************************************
 error_reporting(0);
 echo '<script type="text/javascript">
-var page=parent.location.href.replace(/.*\//,"");
-if(page && page!="index.php"){
-	window.location.href="index.php";
-	}
+try {
+    var page=parent.location.href.replace(/.*\//,"");
+    if(window.self === window.top && page && page!="index.php"){
+        window.location.href="index.php";
+    }
+} catch(e) {
+    // Cross-origin access blocked, assume proper iframe usage
+}
 
 </script>';
 ?>
@@ -98,7 +102,7 @@ if(page && page!="index.php"){
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label class="control-label">Database Name</label>
+                                                <label class="control-label" for="db">Database Name</label>
                                                 <input type="text" name="db" id="db" size="20" value="opensis" class="form-control"  />
                                             </div>
                                         </div>
