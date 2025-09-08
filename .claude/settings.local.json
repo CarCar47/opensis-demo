@@ -20,7 +20,18 @@
       "Bash(comm:*)",
       "Bash(git checkout:*)",
       "Bash(git ls-tree:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git rm:*)",
+      "Bash(for:*)",
+      "Bash(do)",
+      "Bash(sed:*)",
+      "Bash(done)",
+      "Bash(gcloud sql databases:*)",
+      "Bash(gcloud sql users list:*)",
+      "Bash(gcloud sql users set-password:*)",
+      "Bash(gcloud sql instances describe:*)",
+      "Bash(gcloud run services describe:*)",
+      "Bash(gcloud run revisions describe:*)"
     ],
     "deny": [],
     "ask": []
