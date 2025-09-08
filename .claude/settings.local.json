@@ -18,7 +18,9 @@
       "WebFetch(domain:api.github.com)",
       "Bash(git fetch:*)",
       "Bash(comm:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
