@@ -42,13 +42,20 @@ $page_name = basename($_SERVER['PHP_SELF']);
         <link rel="stylesheet" href="assets/css/installer.css" type="text/css" />
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
         <script>
-            var iframeWin = document.getElementById('mainIframe').contentWindow;
-            $(iframeWin).on('resize', function () {
-                resizeIframe(iframeWin);
-            });
             function resizeIframe(obj) {
-                obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
+                if (obj && obj.contentWindow && obj.contentWindow.document && obj.contentWindow.document.body) {
+                    obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
+                }
             }
+            
+            $(document).ready(function() {
+                var iframe = document.getElementById('mainIframe');
+                if (iframe && iframe.contentWindow) {
+                    $(iframe.contentWindow).on('resize', function () {
+                        resizeIframe(iframe);
+                    });
+                }
+            });
         </script>
         <noscript><META http-equiv=REFRESH content='0;url=../EnableJavascript.php' /></noscript>
     </head>

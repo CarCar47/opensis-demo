@@ -137,7 +137,10 @@ if(page && page!="index.php"){
                 var db_name = document.getElementById('db').value;
                 if (db_name.trim() != ''){
                     document.getElementById('calculating').style.display = 'block';
-                    document.getElementById('step_container').style.display = 'none';
+                    var stepContainer = document.getElementById('step_container');
+                    if (stepContainer) {
+                        stepContainer.style.display = 'none';
+                    }
                 }
             }
         </script>
