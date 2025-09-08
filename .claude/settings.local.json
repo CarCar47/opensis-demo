@@ -4,7 +4,21 @@
       "Bash(test:*)",
       "Read(//c/xampp/apache/conf/**)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(dir:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(gcloud builds submit:*)",
+      "Bash(gcloud builds list:*)",
+      "Bash(gcloud run deploy:*)",
+      "WebFetch(domain:opensis-555888092627.us-east4.run.app)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(git fetch:*)",
+      "Bash(comm:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

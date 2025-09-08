@@ -31,7 +31,7 @@ assets/school_logo/*
 # Backup files
 *.backup
 *.bak
-*.sql
+# *.sql - Commented out to allow install SQL files
 backup/
 backups/
 *.zip

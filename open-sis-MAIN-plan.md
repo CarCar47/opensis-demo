@@ -961,5 +961,785 @@ echo "School URL: $(gcloud run services describe ${SCHOOL_NAME}-opensis --region
 
 ---
 
-*Last Updated: [Current Date]*
-*Plan Version: 1.1 - Added Production Deployment Guide*
+## CASE STUDY: Successful Deployment Documentation
+
+### Project Details - Demo Instance
+- **Project ID**: `opensis-471418`
+- **Region**: `us-east4`
+- **Public URL**: https://opensis-555888092627.us-east4.run.app
+- **GitHub Repository**: https://github.com/CarCar47/opensis-demo (public)
+- **Deployment Date**: September 7, 2025
+
+### Complete Step-by-Step Process That Worked
+
+#### Phase 1: Local Development (✅ COMPLETED)
+**Duration**: ~2 hours
+
+1. **Downloaded OpenSIS Classic**
+   - Source: https://github.com/OS4ED/openSIS-Classic 
+   - Extracted to: `C:\Users\c_clo\OneDrive\Personal\Coding\OpenSIS\openSIS-Classic-master`
+
+2. **XAMPP Installation**
+   - Downloaded from https://www.apachefriends.org/
+   - Installed with PHP 8.x, Apache 2.4+, MySQL 5.7/8.0
+   - **Firewall Settings**: Allowed both Private and Public networks
+
+3. **Apache Configuration**
+   - Created: `C:\xampp\apache\conf\extra\opensis.conf`
+   ```apache
+   Alias /opensis "C:/Users/c_clo/OneDrive/Personal/Coding/OpenSIS/openSIS-Classic-master"
+   <Directory "C:/Users/c_clo/OneDrive/Personal/Coding/OpenSIS/openSIS-Classic-master">
+       Options Indexes FollowSymLinks
+       AllowOverride All
+       Require all granted
+       DirectoryIndex index.php
+   </Directory>
+   ```
+   - Added to httpd.conf: `Include conf/extra/opensis.conf`
+
+4. **Database Setup**
+   - Created database `opensis` in phpMyAdmin
+   - Collation: `utf8_general_ci`
+   - Credentials: root / (empty password)
+
+5. **Installation Process**
+   - **CRITICAL DISCOVERY**: Install PHP files were initially missing from `install/` directory
+   - **Solution**: Moved all installation PHP files from root to `install/` directory
+   - Files moved: Step*.php, SystemCheck.php, index.php, etc.
+   - Completed installation wizard with sample data
+
+6. **Local Testing**
+   - URL: http://localhost/opensis/
+   - Tested with "Peachtree Academy" sample data
+   - All modules verified working
+
+#### Phase 2: Docker Configuration (✅ COMPLETED)
+**Duration**: ~1 hour
+
+1. **Created Dockerfile**
+   ```dockerfile
+   FROM php:8.1-apache
+   # Install dependencies and PHP extensions
+   # CRITICAL: Dynamic port configuration for Cloud Run
+   RUN echo '#!/bin/bash\n\
+   export PORT=${PORT:-8080}\n\
+   sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf\n\
+   sed -i "s/:80/:$PORT/" /etc/apache2/sites-available/000-default.conf\n\
+   apache2-foreground' > /usr/local/bin/start-apache.sh \
+       && chmod +x /usr/local/bin/start-apache.sh
+   CMD ["/usr/local/bin/start-apache.sh"]
+   ```
+
+2. **Created .gitignore**
+   - Excluded: Data.php, logs, backup files, user uploads
+   - **Important**: Included install/ PHP files
+
+3. **Created docker-compose.yml** (for optional local testing)
+
+#### Phase 3: GitHub Repository (✅ COMPLETED)
+**Duration**: ~30 minutes
+
+1. **Git Initialization**
+   ```bash
+   git init
+   git config user.email "carcarr47@github.com"
+   git config user.name "CarCar47"
+   git add .
+   git commit -m "Initial commit - OpenSIS Classic with Docker configuration"
+   ```
+
+2. **GitHub Setup**
+   - Created private repository: `opensis-demo`
+   - **CRITICAL**: Had to make repository public for Cloud Build access
+   - URL: https://github.com/CarCar47/opensis-demo
+
+3. **Code Push**
+   ```bash
+   git remote add origin https://github.com/CarCar47/opensis-demo.git
+   git push -u origin master
+   ```
+
+#### Phase 4: Google Cloud Deployment (✅ COMPLETED)
+**Duration**: ~3 hours (including troubleshooting)
+
+1. **Google Cloud SDK Installation**
+   - Downloaded from https://cloud.google.com/sdk/docs/install-sdk
+   - **Firewall Prompt**: Selected both Private and Public networks
+   - Authentication: `gcloud init` with Google account
+
+2. **Project Creation**
+   - **Project Name**: "OpenSIS" 
+   - **Project ID**: `opensis-471418` (auto-generated)
+   - **Region Preference**: us-east4
+
+3. **API Enablement** (Sequential - each took ~30 seconds)
+   ```bash
+   gcloud services enable run.googleapis.com
+   gcloud services enable cloudbuild.googleapis.com  
+   gcloud services enable sqladmin.googleapis.com
+   gcloud services enable secretmanager.googleapis.com
+   ```
+
+4. **Cloud SQL Setup** (Took ~8 minutes)
+   ```bash
+   # Create MySQL instance
+   gcloud sql instances create opensis-mysql \
+     --database-version=MYSQL_8_0 \
+     --tier=db-f1-micro \
+     --region=us-east4
+   
+   # Set root password
+   gcloud sql users set-password root \
+     --instance=opensis-mysql \
+     --password=OpenSIS2024!Secure
+   
+   # Create database
+   gcloud sql databases create opensis --instance=opensis-mysql
+   
+   # Store password securely
+   echo -n "OpenSIS2024!Secure" | gcloud secrets create db-password --data-file=-
+   ```
+
+5. **Docker Image Build** (Multiple attempts due to issues)
+   - **Initial Issue**: GitHub private repository access denied
+   - **Solution**: Made repository public temporarily
+   - **Successful Build**:
+   ```bash
+   gcloud builds submit --tag gcr.io/opensis-471418/opensis .
+   ```
+
+6. **Cloud Run Deployment Issues & Solutions**
+   
+   **Issue #1**: Port Configuration
+   - **Problem**: Container hardcoded to port 80, Cloud Run expects 8080
+   - **Solution**: Modified Dockerfile with dynamic port script
+   
+   **Issue #2**: Secret Manager Permissions  
+   - **Problem**: Service account couldn't access database password
+   - **Solution**: 
+   ```bash
+   gcloud projects add-iam-policy-binding opensis-471418 \
+     --member="serviceAccount:555888092627-compute@developer.gserviceaccount.com" \
+     --role="roles/secretmanager.secretAccessor"
+   ```
+
+   **Issue #3**: Missing Install Files
+   - **Problem**: Installation files not in /install/ directory in container
+   - **Discovery**: Files were in wrong location locally
+   - **Solution**: Moved 189 files to correct install/ directory, rebuilt image
+
+7. **Final Successful Deployment**
+   ```bash
+   gcloud run deploy opensis \
+     --image=gcr.io/opensis-471418/opensis \
+     --region=us-east4 \
+     --add-cloudsql-instances=opensis-471418:us-east4:opensis-mysql \
+     --set-env-vars=DB_HOST=/cloudsql/opensis-471418:us-east4:opensis-mysql,DB_NAME=opensis,DB_USER=root \
+     --set-secrets=DB_PASSWORD=db-password:latest \
+     --allow-unauthenticated \
+     --memory=1Gi \
+     --cpu=1
+   ```
+
+### Key Lessons Learned & Critical Success Factors
+
+#### Critical Issues Encountered & Solutions:
+1. **Install Files Location**: Always verify install/ directory has PHP files
+2. **Port Configuration**: Cloud Run requires dynamic port 8080 configuration  
+3. **Repository Visibility**: GitHub repo must be public for Cloud Build access
+4. **Service Account Permissions**: Must grant Secret Manager access explicitly
+5. **File Structure Integrity**: Maintain exact OpenSIS directory structure
+
+#### Essential Commands That Worked:
+```bash
+# Build image locally
+gcloud builds submit --tag gcr.io/PROJECT_ID/opensis .
+
+# Deploy with full configuration  
+gcloud run deploy opensis \
+  --image=gcr.io/PROJECT_ID/opensis \
+  --region=REGION \
+  --add-cloudsql-instances=PROJECT_ID:REGION:opensis-mysql \
+  --set-env-vars=DB_HOST=/cloudsql/PROJECT_ID:REGION:opensis-mysql,DB_NAME=opensis,DB_USER=root \
+  --set-secrets=DB_PASSWORD=db-password:latest \
+  --allow-unauthenticated \
+  --memory=1Gi --cpu=1
+```
+
+### Deployment Template for Future Clients
+
+#### Prerequisites Checklist:
+- [ ] Google Cloud SDK installed and authenticated
+- [ ] Project created with billing enabled  
+- [ ] APIs enabled (run, cloudbuild, sqladmin, secretmanager)
+- [ ] Docker image built and tested locally
+- [ ] GitHub repository with complete OpenSIS files
+
+#### New Client Deployment Script:
+```bash
+#!/bin/bash
+# Variables - UPDATE FOR EACH CLIENT
+CLIENT_NAME="newschool"
+PROJECT_ID="your-base-project-id" 
+REGION="us-east4"
+DB_PASSWORD="SecurePassword123!"
+
+# 1. Create Cloud SQL instance
+gcloud sql instances create ${CLIENT_NAME}-mysql \
+  --database-version=MYSQL_8_0 \
+  --tier=db-f1-micro \
+  --region=${REGION}
+
+# 2. Configure database
+gcloud sql users set-password root \
+  --instance=${CLIENT_NAME}-mysql \
+  --password=${DB_PASSWORD}
+
+gcloud sql databases create opensis \
+  --instance=${CLIENT_NAME}-mysql
+
+# 3. Store password securely
+echo -n "${DB_PASSWORD}" | \
+  gcloud secrets create ${CLIENT_NAME}-db-password --data-file=-
+
+# 4. Grant permissions
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+  --member="serviceAccount:$(gcloud projects describe ${PROJECT_ID} --format='value(projectNumber)')-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+
+# 5. Deploy Cloud Run service
+gcloud run deploy ${CLIENT_NAME}-opensis \
+  --image=gcr.io/${PROJECT_ID}/opensis \
+  --region=${REGION} \
+  --add-cloudsql-instances=${PROJECT_ID}:${REGION}:${CLIENT_NAME}-mysql \
+  --set-env-vars=DB_HOST=/cloudsql/${PROJECT_ID}:${REGION}:${CLIENT_NAME}-mysql,DB_NAME=opensis,DB_USER=root \
+  --set-secrets=DB_PASSWORD=${CLIENT_NAME}-db-password:latest \
+  --allow-unauthenticated \
+  --memory=1Gi --cpu=1
+
+# 6. Display URL
+echo "Deployment complete!"
+echo "Client URL: $(gcloud run services describe ${CLIENT_NAME}-opensis --region ${REGION} --format 'value(status.url)')"
+```
+
+### Cost Analysis - Demo Instance
+**Monthly Estimated Costs (db-f1-micro tier):**
+- Cloud Run: ~$15-25/month (1GB RAM, 1 CPU)
+- Cloud SQL: ~$15-20/month (db-f1-micro)  
+- **Total**: ~$30-45/month for small school
+
+### Success Metrics
+- ✅ **Local Development**: 100% functional with sample data
+- ✅ **Docker Build**: Successful containerization
+- ✅ **Cloud Deployment**: Live at public URL
+- ✅ **Installation Wizard**: Fully functional
+- ✅ **Database Connectivity**: Cloud SQL integration working
+- ✅ **Scalability**: Template ready for multiple clients
+
+### Final Verification URLs
+- **Demo Instance**: https://opensis-555888092627.us-east4.run.app
+- **GitHub Source**: https://github.com/CarCar47/opensis-demo
+- **Health Check**: https://opensis-555888092627.us-east4.run.app/health.php
+
+---
+
+## Important File Locations - Reference
+- **Local Development**: `C:\Users\c_clo\OneDrive\Personal\Coding\OpenSIS\openSIS-Classic-master`
+- **Original Download**: `C:\Users\c_clo\Downloads\openSIS-Classic-master.zip`
+- **XAMPP Config**: `C:\xampp\apache\conf\extra\opensis.conf`
+- **Docker Files**: `Dockerfile`, `docker-compose.yml`, `.gitignore`
+- **Critical Install Files**: `install/*.php` (189 files total)
+
+---
+
+## CRITICAL LESSONS LEARNED - September 7, 2025 Deployment
+
+### Issue #1: Missing Install Directory in GitHub
+**Problem**: The `install/` directory with all PHP and SQL files was not pushed to GitHub repository
+**Impact**: Installation wizard couldn't run on Cloud Run deployment
+**Solution**: 
+- Check `.gitignore` for `*.sql` exclusions (line 34 was blocking SQL files)
+- Force add install directory: `git add -A install/`
+- Commit and push: Contains 197 files including PHP, SQL, assets, images, js
+- Rebuild Docker image after pushing
+
+### Issue #2: Cloud SQL Connection from Installation Wizard
+**Problem**: Installation wizard couldn't connect to Cloud SQL database
+**Error**: "Couldn't connect to database server: /cloudsql/..."
+**Root Cause**: Installation wizard uses mysqli TCP connections, not Unix sockets
+**Solutions Attempted**:
+1. ❌ Using socket path: `/cloudsql/opensis-471418:us-east4:opensis-mysql`
+2. ❌ Using `localhost` or `127.0.0.1` 
+3. ❌ Using public IP without authorized networks
+4. ✅ **WORKING SOLUTION**:
+   - Enable public IP on Cloud SQL instance
+   - Add authorized network: `0.0.0.0/0` temporarily for installation
+   - Use public IP in installer: `34.86.162.89`
+
+### Issue #3: Database Authentication
+**Problem**: Root password authentication failing
+**Solutions**:
+- Reset root password to simpler version: `SimplePass123`
+- Created new database user with permissions:
+  ```bash
+  gcloud sql users create admin \
+    --instance=opensis-mysql \
+    --password='pass123' \
+    --project=opensis-471418
+  ```
+- **Working Credentials**:
+  - Username: `admin`
+  - Password: `pass123`
+
+### Issue #4: MySQL Strict Mode
+**Problem**: "Strict mode is enabled" error preventing installation
+**Error Location**: Line 111 in `install/Ins1.php` checks for STRICT_TRANS_TABLES
+**Solution**: Disable strict mode via Cloud SQL flags
+```bash
+gcloud sql instances patch opensis-mysql \
+  --database-flags=^:^sql_mode=ONLY_FULL_GROUP_BY,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION \
+  --project=opensis-471418
+```
+**Note**: Instance restarts after flag change (2-3 minutes)
+
+### Issue #5: Secret Manager Password Storage
+**Problem**: Password in Secret Manager had `-n` prefix from echo command
+**Solution**: Verify secrets with:
+```bash
+gcloud secrets versions access latest --secret=db-password --project=opensis-471418
+```
+Update if needed:
+```bash
+echo -n "pass123" | gcloud secrets versions add db-password --data-file=- --project=opensis-471418
+```
+
+## Current Working Configuration
+
+### Database Users Created
+1. **root** (system default)
+   - Password: `SimplePass123` (changed from original)
+   
+2. **admin** (created for installation)
+   - Password: `pass123`
+   - Full privileges on opensis database
+   - Used for installation wizard
+
+### Cloud SQL Instance Details
+- **Instance Name**: `opensis-mysql`
+- **Version**: MySQL 8.0
+- **Tier**: db-f1-micro
+- **Region**: us-east4
+- **Public IP**: `34.86.162.89`
+- **Connection Name**: `opensis-471418:us-east4:opensis-mysql`
+- **Database Name**: `opensis`
+- **SQL Mode**: Strict mode DISABLED
+
+### Successful Installation Parameters
+- **URL**: https://opensis-555888092627.us-east4.run.app/install/
+- **Database Connection**:
+  - Server: `34.86.162.89` (Cloud SQL public IP)
+  - Port: `3306`
+  - Username: `admin`
+  - Password: `pass123`
+  - Database: `opensis`
+- **Installation Option**: "Remove data from existing database"
+
+## Streamlined Process for Next Client Deployment
+
+### Prerequisites Checklist
+- [x] Install directory properly in GitHub
+- [x] Docker image built with install files
+- [x] Know how to disable strict mode
+- [x] Have simple password strategy
+
+### Step-by-Step for New Client
+1. **Create Cloud SQL Instance** (8 minutes)
+```bash
+gcloud sql instances create CLIENT-mysql \
+  --database-version=MYSQL_8_0 \
+  --tier=db-f1-micro \
+  --region=us-east4 \
+  --project=opensis-471418
+```
+
+2. **Immediately Set SQL Mode** (prevents strict mode issues)
+```bash
+gcloud sql instances patch CLIENT-mysql \
+  --database-flags=^:^sql_mode=ONLY_FULL_GROUP_BY,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION \
+  --project=opensis-471418
+```
+
+3. **Create Database and User**
+```bash
+# Create database
+gcloud sql databases create opensis --instance=CLIENT-mysql
+
+# Create admin user with simple password
+gcloud sql users create admin \
+  --instance=CLIENT-mysql \
+  --password='pass123' \
+  --project=opensis-471418
+```
+
+4. **Enable Public IP and Authorized Networks**
+```bash
+# In Console: SQL → Instance → Connections
+# Add authorized network: 0.0.0.0/0 (temporary for installation)
+# Note the public IP address
+```
+
+5. **Store Password in Secret Manager**
+```bash
+echo -n "pass123" | gcloud secrets create CLIENT-db-password --data-file=-
+```
+
+6. **Deploy Cloud Run Service**
+```bash
+gcloud run deploy CLIENT-opensis \
+  --image=gcr.io/opensis-471418/opensis \
+  --region=us-east4 \
+  --add-cloudsql-instances=opensis-471418:us-east4:CLIENT-mysql \
+  --set-env-vars=DB_HOST=/cloudsql/opensis-471418:us-east4:CLIENT-mysql,DB_NAME=opensis,DB_USER=admin \
+  --set-secrets=DB_PASSWORD=CLIENT-db-password:latest \
+  --allow-unauthenticated \
+  --memory=1Gi --cpu=1 \
+  --project=opensis-471418
+```
+
+7. **Run Installation Wizard**
+- Navigate to: `https://CLIENT-xxxxx.us-east4.run.app/install/`
+- Use public IP for database server
+- Username: `admin`
+- Password: `pass123`
+- Select "Remove data from existing database"
+
+8. **Post-Installation Security**
+- Remove `0.0.0.0/0` from authorized networks
+- Application will use Cloud SQL proxy via Unix socket
+
+### Time Estimates for Future Deployments
+- Cloud SQL creation: 8 minutes
+- SQL mode configuration: 2 minutes
+- User/database setup: 1 minute
+- Cloud Run deployment: 3 minutes
+- Installation wizard: 5 minutes
+- **Total: ~20 minutes per client**
+
+### Common Pitfalls to Avoid
+1. ❌ Don't forget to disable strict mode BEFORE installation
+2. ❌ Don't use complex passwords during installation (special chars cause issues)
+3. ❌ Don't forget to push install/ directory to GitHub
+4. ❌ Don't leave 0.0.0.0/0 authorized network after installation
+5. ❌ Don't use root user if possible (create admin user instead)
+
+---
+
+## FREQUENTLY ASKED QUESTIONS - Multi-Client Deployments
+
+### Q1: What exactly did we create? Is this a client instance or a template?
+
+**A**: We created a **DEMO/TEMPLATE** instance at https://opensis-555888092627.us-east4.run.app
+
+- **Purpose**: Show potential clients how OpenSIS works
+- **Usage**: Sales demonstrations, testing new features
+- **Data**: Can contain sample data (Peachtree Academy) or your test data
+- **Keep it**: This becomes your permanent demonstration instance
+
+### Q2: How do I deploy for new clients without copying existing data?
+
+**A**: Each client gets **completely separate infrastructure** - no data copying involved!
+
+**Client A Deployment**:
+- Separate Cloud Run service: `school-a-opensis.run.app`
+- Separate Cloud SQL database: `school-a-mysql`
+- Fresh installation: They run the installation wizard themselves
+- Zero connection to your demo or other clients
+
+**Data Isolation**: 
+- Client A cannot access Client B's data
+- Your demo doesn't affect any client
+- Complete enterprise-level security
+
+### Q3: Do deployments come from my local files or from the cloud instance?
+
+**A**: **FROM LOCAL FILES** - This is crucial to understand!
+
+**Why Local Files**:
+- Cloud Run instances contain client data in databases
+- We need fresh, empty databases for each client
+- Your local files contain the "clean" OpenSIS code without any client data
+
+**Your Local Setup Strategy**:
+- ✅ Keep your local files exactly as they are
+- ✅ Same Dockerfile, same configs, same everything  
+- ✅ This becomes your "golden master" for all deployments
+- ❌ Never change your local setup once it's working
+
+### Q4: What role do the Docker files play?
+
+**A**: Your Docker files are the deployment "recipe":
+
+**Dockerfile** (`C:\Users\c_clo\OneDrive\Personal\Coding\OpenSIS\openSIS-Classic-master\Dockerfile`):
+- Contains ALL instructions to build containers
+- Tells Google Cloud how to set up PHP, Apache, MySQL extensions
+- Includes the port configuration fix for Cloud Run
+- Copies all OpenSIS files into containers
+- **Used for every client deployment**
+
+**docker-compose.yml** (`C:\Users\c_clo\OneDrive\Personal\Coding\OpenSIS\openSIS-Classic-master\docker-compose.yml`):
+- Used for local Docker testing only (optional)
+- **NOT used for Google Cloud deployments**
+- Can be ignored for client deployments
+
+**Analogy**:
+- Dockerfile = Recipe for making a cake
+- Your local files = Ingredients
+- Docker image = The finished cake (contains everything)
+- Each Cloud Run deployment = Serving the cake to different clients
+
+### Q5: Can I use the same Google Cloud project for multiple clients?
+
+**A**: **YES!** This is the recommended approach for easier management.
+
+**Same Project, Multiple Containers**:
+```
+Google Cloud Project: "OpenSIS" (opensis-471418)
+├── Container 1: "opensis" (your demo)
+│   ├── Database: opensis-mysql
+│   └── URL: opensis-555888092627.us-east4.run.app
+│
+├── Container 2: "hillside-academy-opensis" 
+│   ├── Database: hillside-academy-mysql
+│   └── URL: hillside-academy-opensis-abc123.us-east4.run.app
+│
+└── Container 3: "riverside-school-opensis"
+    ├── Database: riverside-school-mysql
+    └── URL: riverside-school-opensis-xyz789.us-east4.run.app
+```
+
+**Complete Separation Despite Same Project**:
+- ✅ **Data Isolation**: Each container has its own database
+- ✅ **URL Isolation**: Each gets unique URL
+- ✅ **Resource Isolation**: Containers run independently
+- ✅ **Security**: Client A cannot access Client B's data
+
+**Advantages of Same Project**:
+- Easier management (one Google Cloud console)
+- Cost efficiency (share Docker image, one billing account)
+- Simpler deployment commands
+
+### Q6: How much easier are future deployments?
+
+**A**: **80% faster** because you've solved all the hard problems!
+
+**First Deployment (What we did)**: ~3 hours
+- Figuring out port configuration
+- Troubleshooting missing install files
+- Debugging permissions
+- Learning the commands
+
+**Future Client Deployments**: ~15-30 minutes
+- ✅ Skip XAMPP setup (already tested)
+- ✅ Skip local troubleshooting (files work)
+- ✅ Skip permission debugging (script handles it)
+- ✅ Use automated deployment script
+
+**Future Deployment Process**:
+```bash
+# 5 minutes: Set variables
+CLIENT_NAME="new-school"
+
+# 8 minutes: Automated database creation
+gcloud sql instances create ${CLIENT_NAME}-mysql ...
+
+# 2 minutes: Deploy (reuses your working Docker image)
+gcloud run deploy ${CLIENT_NAME}-opensis ...
+
+# Client completes their own installation (20 minutes)
+```
+
+### Q7: Do clients see the same installation wizard I see now?
+
+**A**: **YES!** Exactly the same process.
+
+**What Each New Client Experiences**:
+1. You give them their URL: `https://their-school-opensis.run.app`
+2. They visit and see: "New Installation" screen (identical to yours)
+3. They complete wizard:
+   - System requirements ✓ (automatically passes)
+   - Database connection ✓ (pre-configured by your deployment)
+   - School information (they enter their school name, dates)
+   - Admin account (they create their login credentials)
+4. Result: Fresh OpenSIS with only their data
+
+**No Technical Setup Required by Client**:
+- No XAMPP installation
+- No database configuration  
+- No server management
+- Just the web-based installation wizard
+
+### Q8: What's the deployment command difference for new clients?
+
+**A**: Minimal changes - just different names:
+
+**Your Demo**:
+```bash
+gcloud run deploy opensis --image=gcr.io/opensis-471418/opensis
+```
+
+**Client A**:
+```bash
+gcloud run deploy hillside-academy-opensis --image=gcr.io/opensis-471418/opensis
+```
+
+**Client B**:
+```bash
+gcloud run deploy riverside-school-opensis --image=gcr.io/opensis-471418/opensis
+```
+
+**Same**: Docker image, project, configuration
+**Different**: Service name, database name, URL
+
+---
+
+## CLIENT DNS WORKFLOW FOR CUSTOM DOMAINS
+
+### Overview: Connecting Client Schools to Their Own Domains
+
+When deploying OpenSIS for client schools who want their own custom domain (e.g., `opensis.lincolnhigh.edu`), follow this specific workflow order to ensure successful domain connection.
+
+### The 5-Step Client Onboarding Process
+
+#### Step 1: Deploy New Container for Client
+**What YOU do:**
+- Deploy new Cloud Run service for the client
+- Create separate Cloud SQL database
+- Client receives temporary URL: `clientname-opensis-12345.us-east4.run.app`
+
+**Commands:**
+```bash
+# Deploy client's container
+gcloud run deploy clientname-opensis \
+  --image=gcr.io/PROJECT_ID/opensis \
+  --add-cloudsql-instances=PROJECT_ID:REGION:clientname-mysql \
+  --set-env-vars=DB_HOST=/cloudsql/PROJECT_ID:REGION:clientname-mysql \
+  --allow-unauthenticated
+```
+
+#### Step 2: Client Completes Setup Wizard
+**What CLIENT does:**
+- Uses temporary URL to access installation wizard
+- Runs through Steps 0-5 of OpenSIS installation
+- Creates their admin account, school information
+- System becomes fully functional on temporary URL
+
+**No custom domain needed yet** - installation works perfectly with temporary URL.
+
+#### Step 3: Client Adds DNS Record in Their Domain
+**What CLIENT does in their domain registrar** (GoDaddy, Namecheap, etc.):
+
+**If client owns:** `lincolnhigh.edu`
+
+**DNS Record to Add:**
+- **Type:** `CNAME`
+- **Host/Name:** `opensis`
+- **Value/Points To:** `ghs.googlehosted.com`
+- **TTL:** `3600` (or default)
+
+**Result:** `opensis.lincolnhigh.edu` now points to Google's servers
+
+#### Step 4: You Add Domain Mapping in Google Cloud
+**What YOU do after client confirms DNS is set:**
+
+1. **Google Cloud Console:**
+   - Go to Cloud Run → Domain Mappings
+   - Click "ADD MAPPING"
+   - **Service:** Select client's Cloud Run service
+   - **Domain:** Enter `opensis.lincolnhigh.edu`
+   - Click "CONTINUE"
+
+2. **Google Verifies Domain:**
+   - Google checks the CNAME record client added
+   - Verification usually takes 2-10 minutes
+   - Google automatically provisions SSL certificate
+
+#### Step 5: Client Gets Custom URL
+**Final Result:**
+- **Custom URL:** `https://opensis.lincolnhigh.edu` (SSL automatic)
+- **Temporary URL:** Still works as backup
+- **Same Data:** All school data intact from installation
+
+### Critical Success Factors
+
+#### DNS Record Must Exist BEFORE Domain Mapping
+- ❌ **Wrong Order**: Add domain mapping → Client adds DNS = Verification fails
+- ✅ **Correct Order**: Client adds DNS → Add domain mapping = Success
+
+#### Verification Timeline
+- **Fast DNS Propagation:** 2-10 minutes
+- **Slow DNS Propagation:** Up to 24 hours
+- **Check Status:** Google Cloud Console shows verification progress
+
+### Client Instructions Template
+
+**Email Template for Clients:**
+```
+Subject: Custom Domain Setup for Your OpenSIS System
+
+Hi [School Name],
+
+Your OpenSIS system is now ready for custom domain setup!
+
+Your temporary URL (works now): https://[school]-opensis-12345.us-east4.run.app
+
+To get your custom domain opensis.[yourschool.edu] working:
+
+1. Log into your domain registrar (GoDaddy, Namecheap, etc.)
+2. Go to DNS Management/DNS Records
+3. Add a new CNAME record:
+   - Type: CNAME
+   - Host: opensis  
+   - Points to: ghs.googlehosted.com
+   - TTL: 3600
+4. Save the record
+5. Reply to this email to confirm it's added
+
+Once confirmed, we'll complete the connection on our end (takes ~10 minutes).
+
+Questions? Just reply to this email.
+
+Best regards,
+[Your Name]
+```
+
+### Troubleshooting Common Issues
+
+#### Issue: Domain mapping verification fails
+**Cause:** DNS record not propagated yet
+**Solution:** Wait longer, check DNS with `nslookup opensis.schooldomain.edu`
+
+#### Issue: Client can't find DNS settings
+**Cause:** Different domain registrars have different interfaces
+**Solution:** Provide registrar-specific instructions (GoDaddy vs Namecheap vs others)
+
+#### Issue: CNAME conflicts with existing records
+**Cause:** Client already has "opensis" subdomain
+**Solution:** Use different subdomain like "sis.schooldomain.edu" or "student.schooldomain.edu"
+
+### Cost Implications
+- **DNS Setup:** FREE (Google provides domain mapping at no cost)
+- **SSL Certificate:** FREE (Google auto-provisions Let's Encrypt certificates)
+- **Domain Registration:** Client pays their domain registrar (~$10-15/year)
+
+### Benefits of This Workflow
+- ✅ **Clean Separation:** Installation completes before domain complexity
+- ✅ **No Downtime:** System works on temporary URL throughout process
+- ✅ **Professional URLs:** `opensis.lincolnhigh.edu` looks professional
+- ✅ **SSL Automatic:** HTTPS works immediately after verification
+- ✅ **Scalable Process:** Same workflow for every client
+
+---
+
+*Last Updated: September 7, 2025*
+*Plan Version: 2.2 - Added Client DNS Workflow Section*
+*Demo Instance: https://opensis-555888092627.us-east4.run.app*
